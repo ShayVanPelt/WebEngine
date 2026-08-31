@@ -1,8 +1,8 @@
 export const budgetOptions = [
-  "Under $1,000",
-  "$1,000–$1,500",
-  "$1,500–$2,500",
-  "$2,500+",
+  "$1,500 (Business Website)",
+  "$2,500–$5,000",
+  "$5,000+",
+  "Custom project",
   "Not sure yet",
 ] as const;
 

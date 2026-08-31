@@ -11,16 +11,49 @@ import { Button } from "@/components/ui/Button";
 export function ContactForm() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
 
-    // Simulate form submission - replace with actual API endpoint
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const form = e.currentTarget;
+    const formData = new FormData(form);
 
-    setIsSubmitting(false);
-    setIsSubmitted(true);
+    const payload = {
+      name: formData.get("name") as string,
+      businessName: formData.get("businessName") as string,
+      email: formData.get("email") as string,
+      phone: (formData.get("phone") as string) || undefined,
+      currentWebsite: (formData.get("currentWebsite") as string) || undefined,
+      businessDescription: formData.get("businessDescription") as string,
+      projectGoals: formData.get("projectGoals") as string,
+      budget: formData.get("budget") as string,
+      timeline: formData.get("timeline") as string,
+    };
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Failed to send message. Please try again.");
+        return;
+      }
+
+      setIsSubmitted(true);
+      form.reset();
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isSubmitted) {
@@ -192,6 +225,11 @@ export function ContactForm() {
             </div>
 
             <div className="pt-4">
+              {error && (
+                <p className="mb-4 text-sm text-red-500" role="alert">
+                  {error}
+                </p>
+              )}
               <Button
                 type="submit"
                 variant="primary"

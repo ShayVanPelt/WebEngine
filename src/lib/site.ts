@@ -3,8 +3,8 @@ export const siteConfig = {
   tagline: "Web Design & Development",
   description:
     "Custom websites for small businesses — designed, developed, and launched without the template-site look.",
-  url: "https://webengine.dev",
-  email: "hello@webengine.dev",
+  url: "https://webengine.shayvanpelt.com",
+  email: "hello@webengine.shayvanpelt.com",
   author: {
     name: "Shay",
     title: "Software Engineer & Web Developer",
