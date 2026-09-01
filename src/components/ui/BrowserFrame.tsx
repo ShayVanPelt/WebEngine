@@ -96,6 +96,8 @@ export function BrowserFrame({
             rel="noopener noreferrer"
             className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
             aria-label={`Open ${title} in new tab`}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
           >
             <ExternalLink size={12} />
           </a>
@@ -121,10 +123,11 @@ export function BrowserFrame({
                   iframeLoaded ? "opacity-100" : "opacity-0"
                 }`}
                 loading="lazy"
-                sandbox="allow-scripts allow-same-origin"
+                referrerPolicy="no-referrer-when-downgrade"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
                 onLoad={handleIframeLoad}
                 onError={handleIframeError}
-                tabIndex={interactive ? 0 : -1}
+                tabIndex={-1}
               />
             </>
           ) : (
@@ -177,6 +180,7 @@ function FallbackPreview({ url, title }: { url: string; title: string }) {
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center gap-2 rounded-md bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-opacity hover:opacity-90"
+        onClick={(e) => e.stopPropagation()}
       >
         Visit Live Site
         <ExternalLink size={14} />

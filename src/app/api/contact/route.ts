@@ -1,6 +1,13 @@
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
-import type { BudgetOption, TimelineOption } from "@/data/contact";
+import {
+  getProjectTypeLabel,
+  getTimelineLabel,
+  projectTypeOptions,
+  timelineOptions,
+  type ProjectType,
+  type TimelineOption,
+} from "@/data/contact";
 
 interface ContactPayload {
   name: string;
@@ -10,12 +17,29 @@ interface ContactPayload {
   currentWebsite?: string;
   businessDescription: string;
   projectGoals: string;
-  budget: BudgetOption;
+  projectType: ProjectType;
   timeline: TimelineOption;
 }
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function isValidProjectType(value: string): value is ProjectType {
+  return projectTypeOptions.some((option) => option.value === value);
+}
+
+function isValidTimeline(value: string): value is TimelineOption {
+  return timelineOptions.some((option) => option.value === value);
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 export async function POST(request: Request) {
@@ -30,7 +54,7 @@ export async function POST(request: Request) {
       currentWebsite,
       businessDescription,
       projectGoals,
-      budget,
+      projectType,
       timeline,
     } = body;
 
@@ -40,7 +64,7 @@ export async function POST(request: Request) {
       !email?.trim() ||
       !businessDescription?.trim() ||
       !projectGoals?.trim() ||
-      !budget ||
+      !projectType ||
       !timeline
     ) {
       return NextResponse.json(
@@ -56,6 +80,20 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!isValidProjectType(projectType)) {
+      return NextResponse.json(
+        { error: "Please select a project type." },
+        { status: 400 }
+      );
+    }
+
+    if (!isValidTimeline(timeline)) {
+      return NextResponse.json(
+        { error: "Please select a timeline." },
+        { status: 400 }
+      );
+    }
+
     const toEmail = process.env.CONTACT_TO_EMAIL;
     const fromEmail = process.env.CONTACT_FROM_EMAIL;
 
@@ -67,45 +105,57 @@ export async function POST(request: Request) {
       );
     }
 
+    const projectTypeLabel = getProjectTypeLabel(projectType);
+    const timelineLabel = getTimelineLabel(timeline);
+    const safeName = escapeHtml(name.trim());
+    const safeBusiness = escapeHtml(businessName.trim());
+    const safeEmail = escapeHtml(email.trim());
+    const safePhone = escapeHtml(phone?.trim() || "Not provided");
+    const safeWebsite = currentWebsite?.trim()
+      ? escapeHtml(currentWebsite.trim())
+      : "Not provided";
+    const safeDescription = escapeHtml(businessDescription.trim());
+    const safeGoals = escapeHtml(projectGoals.trim());
+
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     const { error } = await resend.emails.send({
       from: fromEmail,
       to: toEmail,
-      replyTo: email,
-      subject: `New project inquiry — ${businessName}`,
+      replyTo: email.trim(),
+      subject: `New project inquiry — ${businessName.trim()}`,
       text: [
-        `New project inquiry from ${name}`,
+        `New project inquiry from ${name.trim()}`,
         "",
-        `Name: ${name}`,
-        `Business: ${businessName}`,
-        `Email: ${email}`,
-        `Phone: ${phone || "Not provided"}`,
-        `Current website: ${currentWebsite || "Not provided"}`,
-        `Budget: ${budget}`,
-        `Timeline: ${timeline}`,
+        `Name: ${name.trim()}`,
+        `Business: ${businessName.trim()}`,
+        `Email: ${email.trim()}`,
+        `Phone: ${phone?.trim() || "Not provided"}`,
+        `Current website: ${currentWebsite?.trim() || "Not provided"}`,
+        `Project type: ${projectTypeLabel}`,
+        `Timeline: ${timelineLabel}`,
         "",
         "What does your business do?",
-        businessDescription,
+        businessDescription.trim(),
         "",
         "What are they looking for?",
-        projectGoals,
+        projectGoals.trim(),
       ].join("\n"),
       html: `
-        <h2>New project inquiry from ${name}</h2>
+        <h2>New project inquiry from ${safeName}</h2>
         <table style="border-collapse:collapse;width:100%;max-width:600px;">
-          <tr><td style="padding:8px 0;color:#666;">Name</td><td style="padding:8px 0;"><strong>${name}</strong></td></tr>
-          <tr><td style="padding:8px 0;color:#666;">Business</td><td style="padding:8px 0;"><strong>${businessName}</strong></td></tr>
-          <tr><td style="padding:8px 0;color:#666;">Email</td><td style="padding:8px 0;"><a href="mailto:${email}">${email}</a></td></tr>
-          <tr><td style="padding:8px 0;color:#666;">Phone</td><td style="padding:8px 0;">${phone || "Not provided"}</td></tr>
-          <tr><td style="padding:8px 0;color:#666;">Current website</td><td style="padding:8px 0;">${currentWebsite ? `<a href="${currentWebsite}">${currentWebsite}</a>` : "Not provided"}</td></tr>
-          <tr><td style="padding:8px 0;color:#666;">Budget</td><td style="padding:8px 0;">${budget}</td></tr>
-          <tr><td style="padding:8px 0;color:#666;">Timeline</td><td style="padding:8px 0;">${timeline}</td></tr>
+          <tr><td style="padding:8px 0;color:#666;">Name</td><td style="padding:8px 0;"><strong>${safeName}</strong></td></tr>
+          <tr><td style="padding:8px 0;color:#666;">Business</td><td style="padding:8px 0;"><strong>${safeBusiness}</strong></td></tr>
+          <tr><td style="padding:8px 0;color:#666;">Email</td><td style="padding:8px 0;"><a href="mailto:${safeEmail}">${safeEmail}</a></td></tr>
+          <tr><td style="padding:8px 0;color:#666;">Phone</td><td style="padding:8px 0;">${safePhone}</td></tr>
+          <tr><td style="padding:8px 0;color:#666;">Current website</td><td style="padding:8px 0;">${safeWebsite}</td></tr>
+          <tr><td style="padding:8px 0;color:#666;">Project type</td><td style="padding:8px 0;">${escapeHtml(projectTypeLabel)}</td></tr>
+          <tr><td style="padding:8px 0;color:#666;">Timeline</td><td style="padding:8px 0;">${escapeHtml(timelineLabel)}</td></tr>
         </table>
         <h3>What does your business do?</h3>
-        <p>${businessDescription.replace(/\n/g, "<br>")}</p>
+        <p>${safeDescription.replace(/\n/g, "<br>")}</p>
         <h3>What are they looking for?</h3>
-        <p>${projectGoals.replace(/\n/g, "<br>")}</p>
+        <p>${safeGoals.replace(/\n/g, "<br>")}</p>
       `,
     });
 

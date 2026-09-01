@@ -2,7 +2,7 @@
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowUpRight, ExternalLink } from "lucide-react";
 import { projects } from "@/data/projects";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -14,6 +14,7 @@ import { usePrefersReducedMotion } from "@/lib/hooks";
 export function FeaturedWork() {
   const project = projects[0];
   const sectionRef = useRef<HTMLElement>(null);
+  const router = useRouter();
   const prefersReducedMotion = usePrefersReducedMotion();
 
   const { scrollYProgress } = useScroll({
@@ -108,17 +109,25 @@ export function FeaturedWork() {
               className="lg:sticky lg:top-28"
               style={{ scale: browserScale, y: browserY }}
             >
-              <Link
-                href={`/work/${project.slug}`}
-                className="block"
+              <div
+                role="link"
+                tabIndex={0}
+                className="block cursor-pointer"
                 aria-label={`View ${project.name} case study`}
+                onClick={() => router.push(`/work/${project.slug}`)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    router.push(`/work/${project.slug}`);
+                  }
+                }}
               >
                 <BrowserFrame
                   url={project.url}
                   title={project.name}
                   interactive={false}
                 />
-              </Link>
+              </div>
             </motion.div>
           </Reveal>
         </div>

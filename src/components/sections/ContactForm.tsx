@@ -3,20 +3,43 @@
 import { useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import { Send, CheckCircle } from "lucide-react";
-import { budgetOptions, timelineOptions } from "@/data/contact";
+import {
+  projectTypeOptions,
+  timelineOptions,
+  type ProjectType,
+  type TimelineOption,
+} from "@/data/contact";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Reveal } from "@/components/ui/Reveal";
 import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/hooks";
+
+const inputClassName =
+  "w-full border-b border-border bg-transparent py-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-accent";
 
 export function ContactForm() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [projectType, setProjectType] = useState<ProjectType | "">("");
+  const [timeline, setTimeline] = useState<TimelineOption | "">("");
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
+
+    if (!projectType) {
+      setError("Please select a project type.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!timeline) {
+      setError("Please select a timeline.");
+      setIsSubmitting(false);
+      return;
+    }
 
     const form = e.currentTarget;
     const formData = new FormData(form);
@@ -29,8 +52,8 @@ export function ContactForm() {
       currentWebsite: (formData.get("currentWebsite") as string) || undefined,
       businessDescription: formData.get("businessDescription") as string,
       projectGoals: formData.get("projectGoals") as string,
-      budget: formData.get("budget") as string,
-      timeline: formData.get("timeline") as string,
+      projectType,
+      timeline,
     };
 
     try {
@@ -49,6 +72,8 @@ export function ContactForm() {
 
       setIsSubmitted(true);
       form.reset();
+      setProjectType("");
+      setTimeline("");
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -96,7 +121,7 @@ export function ContactForm() {
         </Reveal>
 
         <Reveal delay={0.1}>
-          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+          <form onSubmit={handleSubmit} className="mt-8 space-y-6" noValidate>
             <div className="grid gap-6 sm:grid-cols-2">
               <FormField label="Name" htmlFor="name" required>
                 <input
@@ -104,7 +129,8 @@ export function ContactForm() {
                   id="name"
                   name="name"
                   required
-                  className="w-full border-b border-border bg-transparent py-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-accent"
+                  autoComplete="name"
+                  className={inputClassName}
                   placeholder="Your name"
                 />
               </FormField>
@@ -115,7 +141,8 @@ export function ContactForm() {
                   id="businessName"
                   name="businessName"
                   required
-                  className="w-full border-b border-border bg-transparent py-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-accent"
+                  autoComplete="organization"
+                  className={inputClassName}
                   placeholder="Your business"
                 />
               </FormField>
@@ -128,7 +155,8 @@ export function ContactForm() {
                   id="email"
                   name="email"
                   required
-                  className="w-full border-b border-border bg-transparent py-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-accent"
+                  autoComplete="email"
+                  className={inputClassName}
                   placeholder="you@business.com"
                 />
               </FormField>
@@ -138,7 +166,8 @@ export function ContactForm() {
                   type="tel"
                   id="phone"
                   name="phone"
-                  className="w-full border-b border-border bg-transparent py-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-accent"
+                  autoComplete="tel"
+                  className={inputClassName}
                   placeholder="Optional"
                 />
               </FormField>
@@ -146,11 +175,12 @@ export function ContactForm() {
 
             <FormField label="Current Website" htmlFor="currentWebsite">
               <input
-                type="url"
+                type="text"
                 id="currentWebsite"
                 name="currentWebsite"
-                className="w-full border-b border-border bg-transparent py-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-accent"
-                placeholder="https:// (if you have one)"
+                inputMode="url"
+                className={inputClassName}
+                placeholder="yoursite.com (if you have one)"
               />
             </FormField>
 
@@ -164,7 +194,7 @@ export function ContactForm() {
                 name="businessDescription"
                 required
                 rows={3}
-                className="w-full resize-none border-b border-border bg-transparent py-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-accent"
+                className={cn(inputClassName, "resize-none")}
                 placeholder="Brief description of your business and services"
               />
             </FormField>
@@ -179,52 +209,48 @@ export function ContactForm() {
                 name="projectGoals"
                 required
                 rows={3}
-                className="w-full resize-none border-b border-border bg-transparent py-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-accent"
+                className={cn(inputClassName, "resize-none")}
                 placeholder="New website, redesign, specific features, etc."
               />
             </FormField>
 
-            <div className="grid gap-6 sm:grid-cols-2">
-              <FormField label="Approximate Budget" htmlFor="budget" required>
-                <select
-                  id="budget"
-                  name="budget"
-                  required
-                  className="w-full border-b border-border bg-transparent py-3 text-sm text-foreground outline-none transition-colors focus:border-accent"
-                  defaultValue=""
-                >
-                  <option value="" disabled>
-                    Select a range
-                  </option>
-                  {budgetOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </FormField>
+            <FormField label="Project Type" required>
+              <div
+                className="grid gap-3 sm:grid-cols-2"
+                role="radiogroup"
+                aria-label="Project type"
+              >
+                {projectTypeOptions.map((option) => (
+                  <SelectionCard
+                    key={option.value}
+                    label={option.label}
+                    description={option.description}
+                    selected={projectType === option.value}
+                    onSelect={() => setProjectType(option.value)}
+                  />
+                ))}
+              </div>
+            </FormField>
 
-              <FormField label="Timeline" htmlFor="timeline" required>
-                <select
-                  id="timeline"
-                  name="timeline"
-                  required
-                  className="w-full border-b border-border bg-transparent py-3 text-sm text-foreground outline-none transition-colors focus:border-accent"
-                  defaultValue=""
-                >
-                  <option value="" disabled>
-                    Select a timeline
-                  </option>
-                  {timelineOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </FormField>
-            </div>
+            <FormField label="Timeline" required>
+              <div
+                className="grid grid-cols-2 gap-3 sm:grid-cols-4"
+                role="radiogroup"
+                aria-label="Timeline"
+              >
+                {timelineOptions.map((option) => (
+                  <SelectionCard
+                    key={option.value}
+                    label={option.label}
+                    selected={timeline === option.value}
+                    onSelect={() => setTimeline(option.value)}
+                    compact
+                  />
+                ))}
+              </div>
+            </FormField>
 
-            <div className="pt-4">
+            <div className="pt-2">
               {error && (
                 <p className="mb-4 text-sm text-red-500" role="alert">
                   {error}
@@ -243,8 +269,51 @@ export function ContactForm() {
           </form>
         </Reveal>
       </div>
-
     </section>
+  );
+}
+
+function SelectionCard({
+  label,
+  description,
+  selected,
+  onSelect,
+  compact = false,
+}: {
+  label: string;
+  description?: string;
+  selected: boolean;
+  onSelect: () => void;
+  compact?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      onClick={onSelect}
+      className={cn(
+        "border text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        compact ? "px-3 py-3" : "p-4",
+        selected
+          ? "border-accent bg-accent/10"
+          : "border-border bg-transparent hover:border-foreground/30"
+      )}
+    >
+      <span
+        className={cn(
+          "block font-medium text-foreground",
+          compact ? "text-xs sm:text-sm" : "text-sm"
+        )}
+      >
+        {label}
+      </span>
+      {description && (
+        <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+          {description}
+        </span>
+      )}
+    </button>
   );
 }
 
@@ -255,7 +324,7 @@ function FormField({
   children,
 }: {
   label: string;
-  htmlFor: string;
+  htmlFor?: string;
   required?: boolean;
   children: React.ReactNode;
 }) {

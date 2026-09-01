@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 
 export function usePrefersReducedMotion(): boolean {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     setPrefersReducedMotion(mediaQuery.matches);
 
@@ -13,6 +15,9 @@ export function usePrefersReducedMotion(): boolean {
     mediaQuery.addEventListener("change", handler);
     return () => mediaQuery.removeEventListener("change", handler);
   }, []);
+
+  // Avoid hydration mismatch — always false until mounted
+  if (!mounted) return false;
 
   return prefersReducedMotion;
 }
